@@ -1,0 +1,42 @@
+export const events = [
+  {
+    image: "/images/event1.png",
+    title: "React Conference 2026",
+    slug: "react-conf-2026",
+    location: "San Francisco, CA",
+    date: "June 15-17",
+    time: "9:00 AM - 5:00 PM",
+  },
+  {
+    image: "/images/event2.png",
+    title: "JavaScript Summit",
+    slug: "js-summit-2026",
+    location: "New York, NY",
+    date: "July 20-22",
+    time: "9:00 AM - 5:00 PM",
+  },
+  {
+    image: "/images/event3.png",
+    title: "Web Dev Hackathon",
+    slug: "webdev-hackathon-2026",
+    location: "Austin, TX",
+    date: "August 10-11",
+    time: "10:00 AM - 8:00 PM",
+  },
+  {
+    image: "/images/event4.png",
+    title: "Tech Leaders Meetup",
+    slug: "tech-leaders-meetup",
+    location: "Seattle, WA",
+    date: "August 25",
+    time: "6:00 PM - 9:00 PM",
+  },
+  {
+    image: "/images/event5.png",
+    title: "Full Stack Conference",
+    slug: "fullstack-conf-2026",
+    location: "Boston, MA",
+    date: "September 12-14",
+    time: "8:30 AM - 6:00 PM",
+  },
+];

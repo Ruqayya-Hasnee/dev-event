@@ -1,6 +1,7 @@
 import LightRays from "@/components/LightRays";
 import { Martian_Mono, Schibsted_Grotesk, Geist } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.variable} ${schibstedGrotesk.variable} ${martianMono.variable}`}>
+        <Navbar />
         <div className="absolute inset-0 top-0 min-h-screen">
           <LightRays
             raysOrigin="top-center-offset"
