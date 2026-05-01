@@ -2,6 +2,8 @@ import LightRays from "@/components/LightRays";
 import { Martian_Mono, Schibsted_Grotesk, Geist } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import PostHogPageView from "@/components/PostHogPageView";
+import { Suspense } from "react";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -39,6 +41,9 @@ export default function RootLayout({
             distortion={0.01}
           />
         </div>
+        <Suspense fallback={null}>
+          <PostHogPageView />
+        </Suspense>
         <main>
           {children}
         </main>
