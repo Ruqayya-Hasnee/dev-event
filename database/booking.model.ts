@@ -37,8 +37,7 @@ const BookingSchema = new Schema<IBooking>(
 );
 
 // Pre-save hook to validate events exists before creating booking
-// Async hooks must throw instead of calling next() — Mongoose v9 resolves the promise rejection automatically
-BookingSchema.pre('save', async function () {
+BookingSchema.pre('save', async function (next) {
   const booking = this as IBooking;
 
   // Only validate eventId if it's new or modified
@@ -49,15 +48,16 @@ BookingSchema.pre('save', async function () {
       if (!eventExists) {
         const error = new Error(`Event with ID ${booking.eventId} does not exist`);
         error.name = 'ValidationError';
-        throw error;
+        return next(error);
       }
-    } catch (err) {
-      if ((err as Error).name === 'ValidationError') throw err;
+    } catch {
       const validationError = new Error('Invalid events ID format or database error');
       validationError.name = 'ValidationError';
-      throw validationError;
+      return next(validationError);
     }
   }
+
+  next();
 });
 
 // Create index on eventId for faster queries

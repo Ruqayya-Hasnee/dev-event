@@ -1,48 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import {NextRequest, NextResponse} from "next/server";
+import { v2 as cloudinary } from 'cloudinary';
+
+import connectDB from "@/lib/mongodb";
 import Event from '@/database/event.model';
 
-export async function GET() {
-  try {
-    await connectToDatabase();
+export async function POST(req: NextRequest) {
+    try {
+        await connectDB();
 
-    const events = await Event.find().sort({ date: 1 }).lean();
+        const urlMatch = process.env.CLOUDINARY_URL?.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+        if (!urlMatch) return NextResponse.json({ message: 'Cloudinary not configured' }, { status: 500 });
+        cloudinary.config({ api_key: urlMatch[1], api_secret: urlMatch[2], cloud_name: urlMatch[3], secure: true });
 
-    return NextResponse.json(
-      { success: true, events },
-      { status: 200 }
-    );
-  } catch (e) {
-    return NextResponse.json(
-      { success: false, message: e instanceof Error ? e.message : 'Failed to fetch events' },
-      { status: 500 }
-    );
-  }
+        const formData = await req.formData();
+        const event: Record<string, FormDataEntryValue> = Object.fromEntries(formData.entries());
+
+        const file = formData.get('image') as File;
+
+        if(!file) return NextResponse.json({ message: 'Image file is required'}, { status: 400 })
+
+        let tags: string[], agenda: string[];
+        try {
+            tags = JSON.parse(formData.get('tags') as string);
+            agenda = JSON.parse(formData.get('agenda') as string);
+        } catch {
+            return NextResponse.json({ message: 'Invalid tags or agenda format' }, { status: 400 });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream({ resource_type: 'image', folder: 'DevEvent' }, (error, results) => {
+                if(error) return reject(error);
+
+                resolve(results);
+            }).end(buffer);
+        });
+
+        event.image = (uploadResult as { secure_url: string }).secure_url;
+
+        const createdEvent = await Event.create({
+            ...event,
+            tags: tags,
+            agenda: agenda,
+        });
+
+        return NextResponse.json({ message: 'Event created successfully', event: createdEvent }, { status: 201 });
+    } catch (e) {
+        console.error(e);
+        const errMsg = e instanceof Error ? e.message : (e as any)?.message ?? String(e);
+        return NextResponse.json({ message: 'Event Creation Failed', error: errMsg }, { status: 500 })
+    }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    await connectToDatabase();
+export async function GET() {
+    try {
+        await connectDB();
 
-    const body = await req.json();
+        const events = await Event.find().sort({ createdAt: -1 }).lean();
 
-    const event = await Event.create(body);
-
-    return NextResponse.json(
-      { success: true, message: 'Event created successfully', event },
-      { status: 201 }
-    );
-  } catch (e) {
-    // Mongoose validation errors get a 400; everything else is a 500
-    const isValidationError =
-      e instanceof Error && e.name === 'ValidationError';
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: e instanceof Error ? e.message : 'Failed to create event',
-      },
-      { status: isValidationError ? 400 : 500 }
-    );
-  }
+        return NextResponse.json({ message: 'Events fetched successfully', events }, { status: 200 });
+    } catch (e) {
+        return NextResponse.json({ message: 'Event fetching failed', error: e }, { status: 500 });
+    }
 }

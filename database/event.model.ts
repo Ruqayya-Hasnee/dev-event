@@ -1,7 +1,8 @@
 import { Schema, model, models, Document } from 'mongoose';
 
-// TypeScript interface for Event document
-export interface IEvent extends Document {
+// Plain data shape — used for lean() results and React component props
+export type IEvent = {
+  _id: string;
   title: string;
   slug: string;
   description: string;
@@ -18,9 +19,13 @@ export interface IEvent extends Document {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
-const EventSchema = new Schema<IEvent>(
+// Mongoose Document type — only used internally by the model
+// Omit _id from IEvent so Document's own _id doesn't conflict
+interface IEventDocument extends Omit<IEvent, '_id'>, Document {}
+
+const EventSchema = new Schema<IEventDocument>(
   {
     title: {
       type: String,
@@ -110,9 +115,8 @@ const EventSchema = new Schema<IEvent>(
 );
 
 // Pre-save hook for slug generation and data normalization
-// Async hook — throws on invalid data; Mongoose v9 resolves the rejection automatically
-EventSchema.pre('save', async function () {
-  const event = this as IEvent;
+EventSchema.pre('save', function (next) {
+  const event = this as IEventDocument;
 
   // Generate slug only if title changed or document is new
   if (event.isModified('title') || event.isNew) {
@@ -128,6 +132,8 @@ EventSchema.pre('save', async function () {
   if (event.isModified('time')) {
     event.time = normalizeTime(event.time);
   }
+
+  next();
 });
 
 // Helper function to generate URL-friendly slug
@@ -177,12 +183,9 @@ function normalizeTime(timeString: string): string {
   return `${hours.toString().padStart(2, '0')}:${minutes}`;
 }
 
-// Create unique index on slug for better performance
-EventSchema.index({ slug: 1 }, { unique: true });
-
-// Create compound index for common queries
+// compound index for date-based queries
 EventSchema.index({ date: 1, mode: 1 });
 
-const Event = models.Event || model<IEvent>('Event', EventSchema);
+const Event = models.Event || model<IEventDocument>('Event', EventSchema);
 
 export default Event;
